@@ -11,23 +11,44 @@
 // }
 
 // Викликаємо функцію для запуску Python скрипта
-document.getElementById("run-button").addEventListener("click", () => {
-  // Перевірка на наявність функцій
-  if (window.electron && window.electron.runPythonTest) {
-    window.electron.runPythonTest(); // Викликаємо функцію runPythonTest
-  } else {
-    console.error("runPythonTest не доступна або об'єкт electron не знайдений");
-  }
-});
-
-// Отримуємо результат виконання Python скрипта
-if (window.electron && window.electron.onPythonTestResult) {
-  window.electron.onPythonTestResult((result) => {
-    console.log("Результат Python тесту:", result);
-
-    // Виведення результату в HTML
-    document.getElementById("result").textContent = result;
+document
+  .getElementById("start-voice-assistant")
+  .addEventListener("click", () => {
+    // Перевірка на наявність функцій для запуску Python скрипта
+    if (window.electron && window.electron.startVoiceAssistant) {
+      window.electron.startVoiceAssistant(); // Викликаємо функцію для запуску скрипта прослуховування команд
+    } else {
+      console.error(
+        "startVoiceAssistant не доступна або об'єкт electron не знайдений"
+      );
+    }
   });
-} else {
-  console.error("onPythonTestResult не доступна");
+// if (window.electron && window.electron.running) {
+//   window.electron.running((data) => {
+//     console.log("data", data);
+
+//     document.getElementById("run-info").innerHTML += `<p>${data.message}</p>`;
+//   });
+// }
+
+// Отримуємо результат виконання Python скрипта, що прослуховує команди
+if (
+  window.electron &&
+  window.electron.onAssistantMessage &&
+  !window.electron.listenerAdded
+) {
+  window.electron.listenerAdded = true; // Встановлюємо прапорець лише один раз
+
+  const messagesDisplayed = new Set(); // Зберігаємо унікальні повідомлення
+
+  window.electron.onAssistantMessage((message) => {
+    // Додаємо тільки якщо повідомлення ще не було показано
+    if (!messagesDisplayed.has(message)) {
+      console.log("message", message);
+      document.getElementById("output").innerHTML += `<p>${message}</p>`;
+      messagesDisplayed.add(message); // Позначаємо повідомлення як оброблене
+    }
+  });
+} else if (!window.electron || !window.electron.onAssistantMessage) {
+  console.error("onAssistantMessage не доступна");
 }
