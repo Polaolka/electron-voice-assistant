@@ -148,29 +148,46 @@ class VoiceAssistant:
 
     # Команда: Перезавантаження ПК
     def reboot_pc(self):
+    # Надсилаємо запит на введення хвилин
         self.speak("Введіть через скільки хвилин ви хочете перезавантажити комп'ютер.")
-        minutes = int(input("Введіть через скільки хвилин ви хочете перезавантажити комп'ютер: "))
-        seconds = minutes * 60
-        subprocess.run(["shutdown", "/r", "/t", str(seconds)])
-        self.speak(f"Перезавантаження комп'ютера через {minutes} хвилин.")
+        print("PROMPT:REBOOT Введіть через скільки хвилин ви хочете перезавантажити комп'ютер.", flush=True)
+
+    # Очікуємо на вхідне повідомлення (від Electron)
+        try:
+            minutes = int(input())  # Отримуємо хвилини
+            seconds = minutes * 60
+            subprocess.run(["shutdown", "/r", "/t", str(seconds)])
+            self.speak(f"Перезавантаження комп'ютера через {minutes} хвилин.")
+        except ValueError:
+            self.speak("Введено неправильне значення. Скасовано.")
 
     # Команда: Вимкнення ПК
     def shutdown_pc(self):
+        # Надсилаємо запит на введення хвилин
         self.speak("Введіть через скільки хвилин ви хочете вимкнути комп'ютер.")
-        minutes = int(input("Введіть через скільки хвилин ви хочете вимкнути комп'ютер: "))
-        seconds = minutes * 60
-        subprocess.run(["shutdown", "/s", "/f", "/t", str(seconds)])
-        self.speak(f"Комп'ютер вимкнеться через заданий час.")
+        print("PROMPT:SHUTDOWN Введіть через скільки хвилин ви хочете вимкнути комп'ютер.", flush=True)
+        try:
+            minutes = int(input())
+            seconds = minutes * 60
+            subprocess.run(["shutdown", "/s", "/f", "/t", str(seconds)])
+            self.speak(f"Комп'ютер вимкнеться через заданий час.")
+        except ValueError:
+            self.speak("Введено неправильне значення. Скасовано.")
 
     # Команда: Нагадування
     def set_reminder(self):
         self.speak("Про що нагадати?")
         reminder_text = self.listen_command()
         self.speak(f"Ви хочете, щоб я нагадала: {reminder_text}")
+        # Надсилаємо запит на введення хвилин
         self.speak("Введіть час у хвилинах, через який нагадати.")
-        minutes = int(input("Введіть час у хвилинах, через який нагадати: "))
-        time.sleep(minutes * 60)
-        self.speak(f"Нагадую вам: {reminder_text}")
+        print("PROMPT:REMINDER Введіть час у хвилинах, через який нагадати.", flush=True)
+        try:
+            minutes = int(input())
+            time.sleep(minutes * 60)
+            self.speak(f"Нагадую вам: {reminder_text}")
+        except ValueError:
+            self.speak("Введено неправильне значення. Скасовано.")
 
     # Команда: Отримання погоди
     def get_weather(self, city_name):
@@ -195,8 +212,18 @@ class VoiceAssistant:
 
     # Команда: Скасувати вимкнення
     def cancel_shutdown(self):
-        os.system("shutdown /a")
-        self.speak("Заплановане вимкнення комп'ютера скасовано.")
+        try:
+            os.system("shutdown /a")
+            self.speak("Заплановане вимкнення комп'ютера скасовано.")
+        except Exception as e:
+            return "Не вдалося скасувати операцію. Можливо, не було заплановано операції вимкнення."
+
+    def cancel_reboot(self):
+        try:
+            os.system("shutdown /a")
+            self.speak("Заплановане перезавантаження комп'ютера скасовано.")
+        except Exception as e:
+            return "Не вдалося скасувати операцію. Можливо, не було заплановано операції перезавантаження."
 
     # Команда: Час
     def get_current_time(self):
@@ -207,3 +234,28 @@ class VoiceAssistant:
     def get_current_date(self):
         now = datetime.now().strftime("%d-%m-%Y")
         self.speak(f"Сьогодні {now}")
+
+    # Команда: Таймер
+    def set_timer(self):
+        self.speak("Введіть на скільки хвилин ви хочете встановити таймер?")
+        # Надсилаємо запит на введення хвилин
+        print("PROMPT:TIMER Введіть на скільки хвилин ви хочете встановити таймер?", flush=True)
+        # Очікуємо на вхідне повідомлення (від Electron)
+        try:
+            minutes = int(input())
+            seconds = minutes * 60
+            self.speak(f"Таймер на {minutes} хвилин розпочато.")
+            time.sleep(seconds)
+            self.speak("Час вийшов! Таймер завершено.")
+        except ValueError:
+            self.speak("Будь ласка, введіть правильне число для таймера.")
+
+    # Команда: Калькулятор
+    def calculate(self):
+        self.speak("Скажіть математичне рівняння для обчислення.")
+        equation = self.listen_command()
+        try:
+            result = eval(equation)  # Обчислюємо рівняння
+            self.speak(f"Результат: {result}")
+        except Exception as e:
+            self.speak("Виникла помилка при обчисленні. Будь ласка, спробуйте ще раз.")

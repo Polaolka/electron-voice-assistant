@@ -13,6 +13,40 @@
     <!-- <p>Результат: <span id="result"></span></p> -->
     <div id="output"></div>
 
+    <div id="reboot-pc-section" style="display: none">
+      <label id="reboot-prompt-label" for="reboot-minutes"></label>
+      <input type="number" id="reboot-minutes" placeholder="Хвилини" min="0" />
+      <button id="reboot-pc-btn">Підтвердити</button>
+    </div>
+
+    <div id="timer-pc-section" style="display: none">
+      <label id="timer-prompt-label" for="timer-minutes"></label>
+      <input type="number" id="timer-minutes" placeholder="Хвилини" min="0" />
+      <button id="timer-pc-btn">Підтвердити</button>
+    </div>
+
+    <div id="shutdown-pc-section" style="display: none">
+      <label id="shutdown-prompt-label" for="shutdown-minutes"></label>
+      <input
+        type="number"
+        id="shutdown-minutes"
+        placeholder="Хвилини"
+        min="0"
+      />
+      <button id="shutdown-pc-btn">Підтвердити</button>
+    </div>
+
+    <div id="reminder-pc-section" style="display: none">
+      <label id="reminder-prompt-label" for="reminder-minutes"></label>
+      <input
+        type="number"
+        id="reminder-minutes"
+        placeholder="Хвилини"
+        min="0"
+      />
+      <button id="reminder-pc-btn">Підтвердити</button>
+    </div>
+
     <script src="script.js"></script>
   </body>
 </html>

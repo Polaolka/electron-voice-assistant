@@ -14,7 +14,6 @@ const isDev = process.env.NODE_ENV === "development";
 let mainWindow;
 let tray;
 let pythonProcess;
-let lastMessage = "";
 const gotTheLock = app.requestSingleInstanceLock();
 if (!gotTheLock) {
   app.quit();
@@ -75,7 +74,6 @@ function createWindow() {
   startPythonscript();
   if (isDev) {
     mainWindow.on("ready-to-show", () => mainWindow.show());
-    mainWindow.webContents.openDevTools();
     mainWindow.loadURL("http://localhost:5173");
   } else {
     mainWindow.on("ready-to-show", () => mainWindow.show());
@@ -92,8 +90,25 @@ function startPythonscript() {
   pythonProcess.stdout.on("data", (data) => {
     const messages = data.toString("utf8").trim().split("\n");
     messages.forEach((message) => {
-      if (message !== lastMessage) {
-        lastMessage = message;
+      if (message.startsWith("PROMPT:")) {
+        const [type, ...rest] = message.replace("PROMPT:", "").split(" ");
+        const promptText = rest.join(" ").trim();
+        if (type === "TIMER") {
+          console.log(promptText);
+          mainWindow.webContents.send("show-timer-input", promptText);
+        } else if (type === "REBOOT") {
+          console.log(promptText);
+          mainWindow.webContents.send("show-reboot-input", promptText);
+        } else if (type === "SHUTDOWN") {
+          console.log(promptText);
+          mainWindow.webContents.send("show-shutdown-input", promptText);
+        } else if (type === "REMINDER") {
+          console.log(promptText);
+          mainWindow.webContents.send("show-reminder-input", promptText);
+        } else {
+          console.error(`Невідомий тип PROMPT: ${type}`);
+        }
+      } else {
         mainWindow.webContents.send("assistant-message", message);
       }
     });
@@ -127,6 +142,38 @@ ipcMain.on("run-python-script", () => {
     console.log(`Python process closed with code ${code}`);
     pythonProcess = null;
   });
+});
+ipcMain.on("send-reboot-minutes", (event, minutes) => {
+  if (pythonProcess) {
+    pythonProcess.stdin.write(`${minutes}
+`);
+  } else {
+    console.error("Python process не запущений.");
+  }
+});
+ipcMain.on("send-timer-minutes", (event, minutes) => {
+  if (pythonProcess) {
+    pythonProcess.stdin.write(`${minutes}
+`);
+  } else {
+    console.error("Python process не запущений.");
+  }
+});
+ipcMain.on("send-shutdown-minutes", (event, minutes) => {
+  if (pythonProcess) {
+    pythonProcess.stdin.write(`${minutes}
+`);
+  } else {
+    console.error("Python process не запущений.");
+  }
+});
+ipcMain.on("send-reminder-minutes", (event, minutes) => {
+  if (pythonProcess) {
+    pythonProcess.stdin.write(`${minutes}
+`);
+  } else {
+    console.error("Python process не запущений.");
+  }
 });
 app.on("quit", () => {
   if (pythonProcess) {

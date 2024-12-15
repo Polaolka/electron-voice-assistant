@@ -68,6 +68,10 @@ def main():
             assistant.get_current_time()
         elif any(cmd in command for cmd in commands_dict['commands']['get_current_date']):
             assistant.get_current_date()
+        elif any(cmd in command for cmd in commands_dict['commands']['set_timer']):
+            assistant.set_timer()
+        elif any(cmd in command for cmd in commands_dict['commands']['calculate']):
+            assistant.calculate()
         elif any(cmd in command for cmd in commands_dict['commands']['weather']):
             assistant.speak("В якому місті ви хочете дізнатися погоду?")
             city_name = assistant.listen_command()
