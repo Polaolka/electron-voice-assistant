@@ -6,7 +6,7 @@ export default defineConfig({
   root: resolve(__dirname, "src", "renderer"), // Указуємо рендер папку як кореневу для Vite
   plugins: [
     electron({
-      entry: "src/main/main.js", // Основний процес Electron
+      entry: resolve(__dirname, "src/main/main.js"), // Основний процес Electron
     }),
   ],
   build: {
