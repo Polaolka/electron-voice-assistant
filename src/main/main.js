@@ -8,13 +8,13 @@ const {
 } = require("electron");
 const { spawn } = require("child_process");
 const path = require("path");
-const { PythonShell } = require("python-shell");
-const { execFile } = require("child_process");
 const { menuTemplate } = require("./templates");
 
 const isDev = process.env.NODE_ENV === "development";
 let mainWindow;
 let tray;
+let pythonProcess; // Глобальна змінна для Python-процесу
+let lastMessage = ""; // Зберігаємо останнє повідомлення для уникнення дублювання
 const gotTheLock = app.requestSingleInstanceLock();
 
 if (!gotTheLock) {
@@ -45,13 +45,15 @@ if (!gotTheLock) {
     }
   });
 }
+
 function createMenu() {
   // Створення меню
   const menu = new Menu.buildFromTemplate(menuTemplate);
   // Встановлюємо меню для програми
   Menu.setApplicationMenu(menu);
 }
-// Створення  трею
+
+// Створення трею
 function createTray() {
   const iconPath = path.join(
     __dirname,
@@ -86,6 +88,7 @@ function createWindow() {
   createTray();
   createMenu();
   startPythonscript();
+
   if (isDev) {
     mainWindow.on("ready-to-show", () => mainWindow.show());
     mainWindow.webContents.openDevTools();
@@ -96,16 +99,49 @@ function createWindow() {
   }
 }
 
-// function running() {
-//   mainWindow.webContents.on("did-finish-load", () => {
-//     mainWindow.webContents.send("mainCannel", { message: "App is running!" });
-//   });
-// }
-
-const pathToScript = path.join(__dirname, "..", "..", "test_script.py");
+const pathToScript = path.join(__dirname, "..", "pyScripts", "MAN_main.py");
 
 function startPythonscript() {
-  const pythonProcess = spawn("python", [pathToScript], { encoding: "utf8" });
+  // Уникаємо повторного запуску Python-процесу
+  if (pythonProcess) {
+    console.log("Python script is already running.");
+    return;
+  }
+
+  pythonProcess = spawn("python", [pathToScript], { encoding: "utf8" });
+
+  pythonProcess.stdout.on("data", (data) => {
+    const messages = data.toString("utf8").trim().split("\n");
+
+    messages.forEach((message) => {
+      if (message !== lastMessage) {
+        // Перевіряємо, чи повідомлення унікальне
+        lastMessage = message;
+        mainWindow.webContents.send("assistant-message", message);
+      }
+    });
+  });
+
+  pythonProcess.stderr.on("data", (data) => {
+    console.error("Python error:", data.toString("utf8").trim());
+  });
+
+  pythonProcess.on("close", (code) => {
+    console.log(`Python process closed with code ${code}`);
+    pythonProcess = null; // Очищаємо процес після завершення
+  });
+}
+
+ipcMain.on("run-python-script", () => {
+  // Перевіряємо, чи Python-скрипт уже запущений
+  if (pythonProcess) {
+    console.log("Python script is already running.");
+    return;
+  }
+
+  console.log("Starting Python script...");
+  const pathToScript = path.join(__dirname, "..", "pyScripts", "MAN_main.py");
+  pythonProcess = spawn("python", [pathToScript], { encoding: "utf8" });
 
   pythonProcess.stdout.on("data", (data) => {
     const messages = data.toString("utf8").trim().split("\n");
@@ -120,8 +156,15 @@ function startPythonscript() {
 
   pythonProcess.on("close", (code) => {
     console.log(`Python process closed with code ${code}`);
+    pythonProcess = null; // Звільняємо змінну після завершення процесу
   });
-}
+});
+
+app.on("quit", () => {
+  if (pythonProcess) {
+    pythonProcess.kill();
+  }
+});
 
 app.whenReady().then(createWindow);
 

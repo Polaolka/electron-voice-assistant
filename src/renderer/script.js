@@ -16,7 +16,7 @@ document
   .addEventListener("click", () => {
     // Перевірка на наявність функцій для запуску Python скрипта
     if (window.electron && window.electron.startVoiceAssistant) {
-      window.electron.startVoiceAssistant(); // Викликаємо функцію для запуску скрипта прослуховування команд
+      window.electron.startVoiceAssistant();
     } else {
       console.error(
         "startVoiceAssistant не доступна або об'єкт electron не знайдений"

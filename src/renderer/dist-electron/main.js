@@ -9,12 +9,12 @@ const {
 } = require("electron");
 const { spawn } = require("child_process");
 const path = require("path");
-require("python-shell");
-require("child_process");
 const { menuTemplate } = require("./templates");
 const isDev = process.env.NODE_ENV === "development";
 let mainWindow;
 let tray;
+let pythonProcess;
+let lastMessage = "";
 const gotTheLock = app.requestSingleInstanceLock();
 if (!gotTheLock) {
   app.quit();
@@ -82,9 +82,38 @@ function createWindow() {
     mainWindow.loadFile(path.join(__dirname, "../../dist/renderer/index.html"));
   }
 }
-const pathToScript = path.join(__dirname, "..", "..", "test_script.py");
+const pathToScript = path.join(__dirname, "..", "pyScripts", "MAN_main.py");
 function startPythonscript() {
-  const pythonProcess = spawn("python", [pathToScript], { encoding: "utf8" });
+  if (pythonProcess) {
+    console.log("Python script is already running.");
+    return;
+  }
+  pythonProcess = spawn("python", [pathToScript], { encoding: "utf8" });
+  pythonProcess.stdout.on("data", (data) => {
+    const messages = data.toString("utf8").trim().split("\n");
+    messages.forEach((message) => {
+      if (message !== lastMessage) {
+        lastMessage = message;
+        mainWindow.webContents.send("assistant-message", message);
+      }
+    });
+  });
+  pythonProcess.stderr.on("data", (data) => {
+    console.error("Python error:", data.toString("utf8").trim());
+  });
+  pythonProcess.on("close", (code) => {
+    console.log(`Python process closed with code ${code}`);
+    pythonProcess = null;
+  });
+}
+ipcMain.on("run-python-script", () => {
+  if (pythonProcess) {
+    console.log("Python script is already running.");
+    return;
+  }
+  console.log("Starting Python script...");
+  const pathToScript2 = path.join(__dirname, "..", "pyScripts", "MAN_main.py");
+  pythonProcess = spawn("python", [pathToScript2], { encoding: "utf8" });
   pythonProcess.stdout.on("data", (data) => {
     const messages = data.toString("utf8").trim().split("\n");
     messages.forEach((message) => {
@@ -96,6 +125,12 @@ function startPythonscript() {
   });
   pythonProcess.on("close", (code) => {
     console.log(`Python process closed with code ${code}`);
+    pythonProcess = null;
   });
-}
+});
+app.on("quit", () => {
+  if (pythonProcess) {
+    pythonProcess.kill();
+  }
+});
 app.whenReady().then(createWindow);
